@@ -2,11 +2,12 @@
 
 #include "Vec3.h"
 #include <vector>
+#include "Quaternion.h"
 
 class Camera {
 public:
     Vec3 position;
-    Vec3 rotation;
+    Quaternion rotation;
 
     Camera();                                    // Default constructor
     Camera(const Vec3& pos);                     // Constructor with position

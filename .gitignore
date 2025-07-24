@@ -1,1 +1,37 @@
+# Ignore build directories (common names)
+build/
+Build/
+cmake-build-*/
+
+# Ignore CMake generated files
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+Testing/
+
+# Ignore generated files from IDEs (optional)
+*.cbp
+*.opensdf
+*.vcxproj*
+*.sln
+*.user
+*.ninja
+
+# Ignore binaries and object files
+*.o
+*.obj
+*.so
+*.dll
+*.exe
+*.out
+*.a
+*.lib
+
+# Keep CMakeLists.txt files tracked (no need to ignore)
+
+# Ignore temporary files
+*~
+*.swp
 .DS_Store

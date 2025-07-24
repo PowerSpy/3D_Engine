@@ -18,7 +18,7 @@ void OBJParser::loadOBJ(const std::string& filename, std::vector<Vec3>& vertices
         if (prefix == "v") {
             float x, y, z;
             ss >> x >> y >> z;
-            vertices.emplace_back(x, y, z, 1.0f);
+            vertices.emplace_back(x, y, z);
         }
         else if (prefix == "f") {
             std::vector<int> indices;

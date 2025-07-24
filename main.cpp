@@ -6,15 +6,34 @@
 #include <cmath>
 #include "OBJParser.h"
 #include "Camera.h"
+#include "Quaternion.h"
+#include <SDL_ttf.h>
+#include <string>
 
 
 int main() {
     // Initialize SDL
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        std::cout << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
+        std::cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << '\n';
         return 1;
     }
-    
+
+    if (TTF_Init() == -1) {
+        std::cerr << "TTF_Init failed! TTF_Error: " << TTF_GetError() << '\n';
+        SDL_Quit();
+        return 1;
+    }
+
+    TTF_Font* font = TTF_OpenFont("/System/Library/Fonts/SFNS.ttf", 18);
+
+    float DEG2RAD = M_PI / 180.0f;
+
+    if (!font) {
+        std::cerr << "Failed to load font: " << TTF_GetError() << '\n';
+        SDL_Quit();
+        return 1;
+    }
+
     // Create window
     SDL_Window* window = SDL_CreateWindow(
         "Simple Graphics Window", 
@@ -80,7 +99,7 @@ int main() {
     std::vector<Vec3> vertices;
     std::vector<Face> faces;
 
-    OBJParser::loadOBJ("tank.obj", vertices, faces);
+    OBJParser::loadOBJ("../tank.obj", vertices, faces);
 
 
 
@@ -110,7 +129,7 @@ int main() {
     
     // Update screen
     SDL_RenderPresent(renderer);
-    
+    bool increased = false;
     // Event loop
     SDL_Event event;
     bool quit = false;
@@ -146,31 +165,74 @@ int main() {
         else if (state[SDL_SCANCODE_E]) {
             camera.moveUp(0.1f);
         }
+        const float angleDeg = 1.0f;
+        const float angleRad = angleDeg * DEG2RAD;
+
         if (state[SDL_SCANCODE_UP]) {
-            camera.rotation.x += 0.01f;
+            // Pitch up (rotate around X-)
+            camera.rotation.applyRotation(Quaternion(-angleRad, Vec3(1, 0, 0)));
+            // if (!increased){
+            //     camera.rotation.applyRotation(Quaternion(90 * DEG2RAD, Vec3(0, 1, 0)));
+            //     increased = true;
+            // }
+            
         }
         else if (state[SDL_SCANCODE_DOWN]) {
-            camera.rotation.x -= 0.01f;
+            // Pitch down (rotate around X+)
+            camera.rotation.applyRotation(Quaternion(angleRad, Vec3(1, 0, 0)));
         }
         else if (state[SDL_SCANCODE_LEFT]) {
-            camera.rotation.y += 0.01f;
+            // Yaw left (rotate around Y-)
+            camera.rotation.applyRotation(Quaternion(angleRad, Vec3(0, 1, 0)));
         }
         else if (state[SDL_SCANCODE_RIGHT]) {
-            camera.rotation.y -= 0.01f;
+            // Yaw right (rotate around Y+)
+            camera.rotation.applyRotation(Quaternion(-angleRad, Vec3(0, 1, 0)));
         }
         else if (state[SDL_SCANCODE_R]) {
-            camera.rotation.z += 0.01f;
+            // Roll right (rotate around Z-)
+            camera.rotation.applyRotation(Quaternion(-angleRad, Vec3(0, 0, 1)));
         }
         else if (state[SDL_SCANCODE_F]) {
-            camera.rotation.z -= 0.01f;
+            // Roll left (rotate around Z+)
+            camera.rotation.applyRotation(Quaternion(angleRad, Vec3(0, 0, 1)));
         }
-
         // Clear the screen
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
-        
+
         // Set render color to white for drawing
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+
+        // Assume camera is available
+        std::string posText = "Pos: " + camera.position.toString();
+        std::string rotText = "Rot: " + camera.rotation.toString();
+
+        SDL_Color white = {255, 255, 255};
+
+        SDL_Surface* posSurface = TTF_RenderText_Blended(font, posText.c_str(), white);
+        SDL_Surface* rotSurface = TTF_RenderText_Blended(font, rotText.c_str(), white);
+
+        SDL_Texture* posTexture = SDL_CreateTextureFromSurface(renderer, posSurface);
+        SDL_Texture* rotTexture = SDL_CreateTextureFromSurface(renderer, rotSurface);
+
+        SDL_Rect posRect = {10, 10, posSurface->w, posSurface->h};
+        SDL_Rect rotRect = {10, 30 + posSurface->h, rotSurface->w, rotSurface->h};
+
+        // Free surfaces after creating textures
+        SDL_FreeSurface(posSurface);
+        SDL_FreeSurface(rotSurface);
+
+        // Render the textures
+        SDL_RenderCopy(renderer, posTexture, nullptr, &posRect);
+        SDL_RenderCopy(renderer, rotTexture, nullptr, &rotRect);
+
+        // Free textures after use (or keep and reuse if static)
+        SDL_DestroyTexture(posTexture);
+        SDL_DestroyTexture(rotTexture);
+
+
+
 
         // Draw the faces
         for (const Face& face : faces) {
@@ -193,6 +255,7 @@ int main() {
     }
     
     // Clean up
+    TTF_CloseFont(font);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();

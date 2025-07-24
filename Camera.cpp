@@ -1,10 +1,11 @@
 #include "Camera.h"
 #include <iostream>
 #include <cmath>
+#include "Quaternion.h"
 
-Camera::Camera() : position(0.0f, 0.0f, 0.0f, 1.0f), rotation(0.0f, 0.0f, 0.0f, 1.0f) {}
+Camera::Camera() : position(0.0f, 0.0f, 0.0f), rotation(1.0f, 0.0f, 0.0f, 0.0f) {}
 
-Camera::Camera(const Vec3& pos) : position(pos), rotation(0.0f, 0.0f, 0.0f, 1.0f) {}
+Camera::Camera(const Vec3& pos) : position(pos), rotation(1.0f, 0.0f, 0.0f, 0.0f) {}
 
 std::vector<std::vector<float>> Camera::getTranslationMatrix() const {
     std::vector<std::vector<float>> translationMatrix(4, std::vector<float>(4, 0.0f));
@@ -21,32 +22,7 @@ std::vector<std::vector<float>> Camera::getTranslationMatrix() const {
 }
 
 std::vector<std::vector<float>> Camera::getRotationMatrix() const {
-    std::vector<std::vector<float>> rotationMatrix(4, std::vector<float>(4, 0.0f));
-
-    float pitch = rotation.x;
-    float yaw = rotation.y;
-    float roll = rotation.z;
-
-    float cosPitch = std::cos(pitch);
-    float sinPitch = std::sin(pitch);
-    float cosYaw = std::cos(yaw);
-    float sinYaw = std::sin(yaw);
-    float cosRoll = std::cos(roll);
-    float sinRoll = std::sin(roll);
-
-    rotationMatrix[0][0] = cosYaw * cosRoll + sinYaw * sinPitch * sinRoll;
-    rotationMatrix[0][1] = -(cosYaw * sinRoll) + sinYaw * sinPitch * cosRoll;
-    rotationMatrix[0][2] = sinYaw * cosPitch;
-    rotationMatrix[1][0] = cosPitch * sinRoll;
-    rotationMatrix[1][1] = cosPitch * cosRoll;
-    rotationMatrix[1][2] = - sinPitch;
-    rotationMatrix[2][0] = - sinYaw * cosRoll + cosYaw * sinPitch * sinRoll;
-    rotationMatrix[2][1] = sinYaw * sinRoll + cosYaw * sinPitch * cosRoll;
-    rotationMatrix[2][2] = cosYaw * cosPitch;
-
-    rotationMatrix[3][3] = 1.0f;
-
-    return rotationMatrix;
+    return rotation.toRotationMatrix();
 }
 
 std::vector<std::vector<float>> Camera::getViewMatrix() const {
@@ -67,35 +43,15 @@ std::vector<std::vector<float>> Camera::getViewMatrix() const {
 }
 
 Vec3 Camera::getForwardVector() const {
-    float pitch = rotation.x;
-    float yaw = rotation.y;
-    return Vec3(
-        std::sin(yaw) * std::cos(pitch),
-        std::sin(pitch),
-        -std::cos(yaw) * std::cos(pitch),
-        1.0f
-    );
+    return rotation.rotate(Vec3(0, 0, -1));
 }
 
 Vec3 Camera::getRightVector() const {
-    float yaw = rotation.y;
-    return Vec3(
-        std::cos(yaw),
-        0,
-        std::sin(yaw),
-        1.0f
-    );
+    return rotation.rotate(Vec3(1, 0, 0));
 }
 
 Vec3 Camera::getUpVector() const {
-    Vec3 forward = getForwardVector();
-    Vec3 right = getRightVector();
-    return Vec3(
-        right.y * forward.z - right.z * forward.y,
-        right.z * forward.x - right.x * forward.z,
-        right.x * forward.y - right.y * forward.x,
-        1.0f
-    );
+    return rotation.rotate(Vec3(0, 1, 0));
 }
 
 void Camera::moveForward(float distance) {
